@@ -28,7 +28,7 @@ import torch
 import numpy as np
 import tvm
 from tvm import relay
-from tvm.relay import ec
+from tvm.relay import mera
 ```
 
 Then, import the model:
@@ -79,8 +79,8 @@ nhwc_inp = nchw_to_nhwc(inp.numpy())
 os.makedirs(output_dir, exist_ok=True)
 nhwc_inp.flatten().astype(np.float32).tofile(os.path.join(output_dir, input_name+".bin"))
 
-with ec.build_config(target="InterpreterHw"):
-    int_result = ec.test_util.run_ec_backend(script_module, nhwc_inp, layout="NHWC")
+with mera.build_config(target="InterpreterHw"):
+    int_result = mera.test_util.run_mera_backend(script_module, nhwc_inp, layout="NHWC")
     res_idx = 0
     for res in int_result:
         nhwc_res = res
@@ -104,8 +104,8 @@ At this stage, we are ready for deployment. It is important to populate a Python
 config = {
 # provided by EdgeCortix
 }
-with ec.build_config(target="IP", **config):
-    ec.build(mod, params, output_dir=output_dir, host_arch="x86", layout=input_layout)
+with mera.build_config(target="IP", **config):
+    mera.build(mod, params, output_dir=output_dir, host_arch="x86", layout=input_layout)
 ```
 
 At this point, a new directory named `resnet50_deploy` should exist in the current directory. This directory contains a shared library that can be used to run the model by using the TVM runtime along with reference data that will be used to validate the deployment. An example of the files found on this newly-created directory are:
@@ -118,12 +118,12 @@ input0.bin
 ref_result_0.bin
 ```
 
-Now we are ready to run this model on the real hardware. For convenience, a simple C++ application is provided under `/opt/edgecortix/private-tvm/apps/ec_cpp/inference.cpp`.
+Now we are ready to run this model on the real hardware. For convenience, a simple C++ application is provided under `/opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp`.
 
 To build this application, we should run:
 
 ```bash
-cd /opt/edgecortix/private-tvm/apps/ec_cpp/
+cd /opt/edgecortix/private-tvm/apps/mera_cpp/
 mkdir build
 cd build
 cmake ..
