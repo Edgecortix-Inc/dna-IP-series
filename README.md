@@ -4,7 +4,7 @@
 This guide assumes that:
 - Our DL model has been created with the PyTorch DL framework.
 - Deployment target is a Xilinx Alveo U50 PCI-E board.
-- Runninf in EdgeCortix docker environment (Nimbix or on-prem).
+- Running in EdgeCortix docker environment (Nimbix or on-prem).
 
 Once inside the docker environment, any shell that is launhced should already have a Python virtual environment activated. This means that we have access to EdgeCortix's compiler stack and all its dependencies and we are ready for compiling a DL model for our target.
 
