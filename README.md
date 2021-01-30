@@ -134,10 +134,10 @@ This will create an executable file named `inference`. This application is able 
 
 It is important to note that the bitstream file with extension `proto_conv.xclbin`, which will also be provided by EdgeCortix, should be placed on the same directory where the `inference` application is invoked.
 
-To run this application, we should only provide the deployment directory. Assuming that the deployment directory is under `/opt/edgecortix/resnet50-deploy` and the bitstream has been placed under the current directory where we will run `inference` from, we can now run the model:
+To run this application, we should only provide the deployment directory. Assuming that the deployment directory is under `/opt/edgecortix/resnet50_deploy` and the bitstream has been placed under the current directory where we will run `inference` from, we can now run the model:
 
 ```bash
-./inference /opt/edgecortix/resnet50-deploy/
+./inference /opt/edgecortix/resnet50_deploy/
 ```
 
 This will run the model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model.
