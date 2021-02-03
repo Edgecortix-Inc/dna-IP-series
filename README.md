@@ -98,17 +98,17 @@ mod, params = relay.frontend.from_pytorch(script_module,input_shapes,layout=inpu
 
 ## Step 5 - Create the shared library
 
-At this stage, we are ready for deployment. It is important to populate a Python dictionary with some specific entries provided by EdgeCortix.
+At this stage, we are ready for deployment. The `arch` parameter in the script should be chosen depending on which release of the Edgecortix IP is being used. e.g. the value should be `100` for the F100 release, `200` for the F200 release and so on.
 
 ```python
 config = {
-# provided by EdgeCortix
+    "arch": 100,
 }
 with mera.build_config(target="IP", **config):
     mera.build(mod, params, output_dir=output_dir, host_arch="x86", layout=input_layout)
 ```
 
-At this point, a new directory named `resnet50_deploy` should exist in the current directory. This directory contains a shared library that can be used to run the model by using the TVM runtime along with reference data that will be used to validate the deployment. An example of the files found on this newly-created directory are:
+After running the script, a new directory named `resnet50_deploy` should exist in the current directory. This directory contains a shared library that can be used to run the model by using the TVM runtime along with reference data that will be used to validate the deployment. An example of the files found on this newly-created directory are:
 
 ```
 deploy.json
