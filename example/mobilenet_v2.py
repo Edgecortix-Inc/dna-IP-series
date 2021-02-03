@@ -51,7 +51,7 @@ input_shapes = [(input_name, nhwc_inp.shape)]
 mod, params = relay.frontend.from_pytorch(script_module,input_shapes,layout=input_layout)
 
 config = {
-  ****
+    "arch": 100,
 }
 
 with mera.build_config(target="IP", **config):
