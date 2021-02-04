@@ -137,3 +137,6 @@ This will create an executable file named `inference`. To run this application, 
 ```
 
 This will run the model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model.
+
+# Example scripts
+The `example` folder in the repository includes ready-to-run python scripts for some example networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of EdgeCortix's IP. For other IP versions, the value of the `arch` parameter should be updated accordingly as was mentioned in the previous section.
