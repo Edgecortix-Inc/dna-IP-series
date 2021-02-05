@@ -1,13 +1,14 @@
 
-# How to deploy ResNet-50 model on Alveo U50 FPGA
+# Deploying a model on EdgeCortix Dynamic Neural Accelerator (DNA) IP
 
 This guide assumes that:
 - Our DL model has been created with the PyTorch DL framework.
-- Deployment target is a Xilinx Alveo U50 PCI-E board.
-- Running in EdgeCortix docker environment (Nimbix or on-prem).
+- Deployment target is a Xilinx AALVEO U50 PCI-E board.
+- Running in EdgeCortix docker environment (Nimbix or on-premise).
 
-Once inside the docker environment, any shell that is launhced should already have a Python virtual environment activated. This means that we have access to EdgeCortix's compiler stack and all its dependencies and we are ready for compiling a DL model for our target.
+Once inside the docker environment, any shell that is launched should already have a Python virtual environment activated. This means that we have access to EdgeCortix's compiler stack and all its dependencies and we are ready for compiling a DL model for our target.
 
+## Creat and compile a model
 In general, the compilation process involve the following steps:
 
 1. Create a quantizable model.
@@ -16,7 +17,7 @@ In general, the compilation process involve the following steps:
 4. Import the traced model into TVM.
 5. Create a shared library that contains our deployed model.
 
-## Step 1 - Create a quantizable model
+### Step 1 - Create a quantizable model
 
 For simplicity we will use an existing trained model provided by the `torchvision` package which is commonly installed together with the `torch` package. These are already installed inside the virtual environment.
 
@@ -38,7 +39,7 @@ from torchvision.models.quantization import resnet as qresnet
 model = qresnet.resnet50(pretrained=True).eval()
 ```
 
-## Step 2 - Quantize and trace the model
+### Step 2 - Quantize and trace the model
 
 To deploy a model, we should use the built-in post-training quantization implementation of Pytorch. Tracing the model is also necessary because the TVM PyTorch front-end expects a traced model as an input.
 
@@ -54,7 +55,7 @@ with torch.no_grad():
     script_module = torch.jit.trace(model, inp).eval()
 ```
 
-## Step 3 - Run the model on EdgeCortix interpreter
+### Step 3 - Run the model on EdgeCortix interpreter
 
 This step will generate reference input and output data that will be used later to verify that the deployment succeeded. We run the same input through the Edgecortix interpreter and save each reference result.
 
@@ -89,16 +90,16 @@ with mera.build_config(target="InterpreterHw"):
         res_idx += 1
 ```
 
-## Step 4 - Import the traced model
+### Step 4 - Import the traced model
 
 ```python
 input_shapes = [(input_name, nhwc_inp.shape)]
 mod, params = relay.frontend.from_pytorch(script_module,input_shapes,layout=input_layout)
 ```
 
-## Step 5 - Create the shared library
+### Step 5 - Create the shared library
 
-At this stage, we are ready for deployment. The `arch` parameter in the script should be chosen depending on which release of the Edgecortix IP is being used. e.g. the value should be `100` for the F100 release, `200` for the F200 release and so on.
+At this stage, we are ready for deployment. The `arch` parameter in the script should be chosen depending on which release of the DNA IP is being used. e.g. the value should be `100` for the F100 release, `200` for the F200 release and so on.
 
 ```python
 config = {
@@ -108,7 +109,20 @@ with mera.build_config(target="IP", **config):
     mera.build(mod, params, output_dir=output_dir, host_arch="x86", layout=input_layout)
 ```
 
-After running the script, a new directory named `resnet50_deploy` should exist in the current directory. This directory contains a shared library that can be used to run the model by using the TVM runtime along with reference data that will be used to validate the deployment. An example of the files found on this newly-created directory are:
+After runnign the python script, an output similar to the following should be seen:
+
+```
+Downloading: "https://download.pytorch.org/models/resnet50-19c8e357.pth" to /home/nimbix/.cache/torch/hub/checkpoints/resnet50-19c8e357.pth
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 97.8M/97.8M [00:01<00:00, 52.6MB/s]
+/opt/edgecortix/pyenv/lib/python3.6/site-packages/torch/quantization/observer.py:121: UserWarning: Please use quant_min and quant_max to specify the range for observers.                     reduce_range will be deprecated in a future release of PyTorch.
+  reduce_range will be deprecated in a future release of PyTorch."
+...100%, 0.02 MB, 137 KB/s, 0 seconds passed
+Cannot find config for target=llvm -keys=cpu -mcpu=core-avx2, workload=('dense_nopack.x86', ('TENSOR', (1, 2048), 'int16'), ('TENSOR', (1000, 2048), 'int16'), None, 'int32'). A fallback configuration is used, which may bring great performance regression.
+Elapsed 20.552747 seconds
+Simulator total latency: 0
+```
+
+This script will create a new directory named `resnet50_deploy` in the current directory. This directory contains a shared library that can be used to run the model by using the TVM runtime along with reference data that will be used to validate the deployment. An example of the files found on this newly-created directory are:
 
 ```
 deploy.json
@@ -136,7 +150,26 @@ This will create an executable file named `inference`. To run this application, 
 ./inference /opt/edgecortix/resnet50_deploy/
 ```
 
-This will run the model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model.
+This will run the model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model. The output will be similar to the following snippet:
 
-# Example scripts
-The `example` folder in the repository includes ready-to-run python scripts for some example networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of EdgeCortix's IP. For other IP versions, the value of the `arch` parameter should be updated accordingly as was mentioned in the previous section.
+```
+[22:53:30] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:63: Loading json data...
+[22:53:30] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:69: Loading runtime module...
+Found Platform
+Platform Name: Xilinx
+INFO: Reading /opt/edgecortix/dna.xclbin
+Loading: '/opt/edgecortix/dna.xclbin'
+[  info  ] 657   , DRM session CD1A42C64A2EEAA8 created.
+[22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:74: Loading parameters...
+[22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:82: Loading input...
+[22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:114: Warming up...
+[22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:120: Running 100 times...
+[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:127: Took 9.16 msec.
+[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:47: max abs diff: 1.17549e-38
+[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:48: mean abs diff: 0
+[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:49: correct ratio: 1
+[  info  ] 657   , DRM session CD1A42C64A2EEAA8 stopped.
+```
+
+## Compile an existing example script
+The `example` folder in the repository includes ready-to-run python scripts for some example networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of the DNA IP. For other IP versions, the value of the `arch` parameter should be updated accordingly as was mentioned in the previous section. After that, the script can be compiler and run as is, based on the instructions in the previous section.
