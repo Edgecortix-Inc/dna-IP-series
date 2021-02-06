@@ -1,5 +1,9 @@
+<img src=https://user-images.githubusercontent.com/6816296/107115281-d873d480-68ae-11eb-9c1b-b2b424a9d3d8.png /> Dynamic Neural Accelerator® & MERA™ Compiler stack Examples
+==============================================
+[Website](https://www.edgecortix.com) |
+[Blog](https://medium.com/edgecortix)
 
-# Deploying a CNN model with EdgeCortix Dynamic Neural Accelerator® (DNA-F100/F200) and the MERA™ compiler
+## Deploying a CNN model with the Dynamic Neural Accelerator® F-series (DNA-F100/F200)
 
 This guide assumes that:
 - The DNN model has been created with the PyTorch DL framework.
