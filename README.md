@@ -1,25 +1,27 @@
 
-# Deploying a model on EdgeCortix Dynamic Neural Accelerator (DNA) IP
+# Deploying a deep learning model with EdgeCortix Dynamic Neural Accelerator® (DNA-F100/F200) and the MERA™ compiler
 
 This guide assumes that:
-- Our DL model has been created with the PyTorch DL framework.
-- Deployment target is a Xilinx AALVEO U50 PCI-E board.
+- The DNN model has been created with the PyTorch DL framework.
+- Deployment target is a Xilinx ALVEO U50 PCI-E board.
 - Running in EdgeCortix docker environment (Nimbix or on-premise).
 
-Once inside the docker environment, any shell that is launched should already have a Python virtual environment activated. This means that we have access to EdgeCortix's compiler stack and all its dependencies and we are ready for compiling a DL model for our target.
+**NOTE**: We can run MERA compiler under *release* or *profiling* (fine-grained performance assessment) modes. Here we only consider the *release* mode version. 
 
-## Creat and compile a model
+Once inside the docker environment, any shell that is launched should already have a Python virtual environment activated. This means that we have access to EdgeCortix's MERA compiler stack and all its dependencies. We are ready for compiling an DNN model for our target hardware.
+
+## Create and compile a DNN model with MERA
 In general, the compilation process involve the following steps:
 
-1. Create a quantizable model.
-2. Quantize and trace the model.
-3. Run the model on the EdgeCortix interpreter to get reference results.
-4. Import the traced model into TVM.
-5. Create a shared library that contains our deployed model.
+1. Create a DNN model (DNA does not need quantization aware training, however it should be possible to quantize the model post-training to INT8 bit).
+2. Quantize and JIT trace the model (pytorch quantization example)[https://pytorch.org/docs/stable/quantization.html].
+3. Run the model on the MERA interpreter to get reference results.
+4. Import the traced model and compile with MERA.
+5. Create a shared library that contains the deployable binaries.
 
 ### Step 1 - Create a quantizable model
 
-For simplicity we will use an existing trained model provided by the `torchvision` package which is commonly installed together with the `torch` package. These are already installed inside the virtual environment.
+For simplicity we will use pre-trained model provided by the `torchvision` (library)[https://github.com/pytorch/vision/tree/master/torchvision/models/quantization] which is commonly installed together with the `pytorch` (package)[https://pytorch.org/]. These are already pre-installed inside our virtual environment in docker.
 
 First, import all the necessary packages:
 
@@ -32,32 +34,34 @@ from tvm import relay
 from tvm.relay import mera
 ```
 
-Then, import the model:
+Next, import the pre-trained model:
 
 ```python
 from torchvision.models.quantization import resnet as qresnet
 model = qresnet.resnet50(pretrained=True).eval()
 ```
 
-### Step 2 - Quantize and trace the model
+### Step 2 - Quantize and JIT trace the model
 
-To deploy a model, we should use the built-in post-training quantization implementation of Pytorch. Tracing the model is also necessary because the TVM PyTorch front-end expects a traced model as an input.
+To deploy a model, we will use the built-in post-training quantization of Pytorch. Tracing the model is also necessary because the TVM PyTorch frontend expects a traced model as an input.
 
 ```python
-# ResNet-50 Pytorch model expects an input image with layout NCHW and size 224x224
+# ResNet-50 Pytorch model expects an input image with layout NCHW and size 224x224. We create a random input tensor for our test
 inp = torch.rand((1, 3, 224, 224))
+
 model.fuse_model()
 model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
 torch.quantization.prepare(model, inplace=True)
 model(inp)
 torch.quantization.convert(model, inplace=True)
+
 with torch.no_grad():
     script_module = torch.jit.trace(model, inp).eval()
 ```
 
-### Step 3 - Run the model on EdgeCortix interpreter
+### Step 3 - Run the model on MERA interpreter
 
-This step will generate reference input and output data that will be used later to verify that the deployment succeeded. We run the same input through the Edgecortix interpreter and save each reference result.
+This step will generate reference input and output data that will be used later to verify that the deployment succeeded. As such, this step is a recommended sanity check. We run the same input through Edgecortix's MERA interpreter and save each reference result.
 
 ```python
 def nchw_to_nhwc(arr):
@@ -90,7 +94,7 @@ with mera.build_config(target="InterpreterHw"):
         res_idx += 1
 ```
 
-### Step 4 - Import the traced model
+### Step 4 - Import the traced model from step 2
 
 ```python
 input_shapes = [(input_name, nhwc_inp.shape)]
@@ -99,7 +103,7 @@ mod, params = relay.frontend.from_pytorch(script_module,input_shapes,layout=inpu
 
 ### Step 5 - Create the shared library
 
-At this stage, we are ready for deployment. The `arch` parameter in the script should be chosen depending on which release of the DNA IP is being used. e.g. the value should be `100` for the F100 release, `200` for the F200 release and so on.
+At this stage, we are ready to deploy to **real hardware** (target="IP") or the MERA **simulator** (target="Simulator") The `arch` parameter in the script should be chosen depending on which release of the DNA IP is being used. e.g. the value should be `100` for the DNA-F100 release, `200` for the DNA-F200 release.
 
 ```python
 config = {
@@ -109,7 +113,7 @@ with mera.build_config(target="IP", **config):
     mera.build(mod, params, output_dir=output_dir, host_arch="x86", layout=input_layout)
 ```
 
-After runnign the python script, an output similar to the following should be seen:
+After running the python script, an output similar to the following should be seen when target is real hardware:
 
 ```
 Downloading: "https://download.pytorch.org/models/resnet50-19c8e357.pth" to /home/nimbix/.cache/torch/hub/checkpoints/resnet50-19c8e357.pth
@@ -132,7 +136,7 @@ input0.bin
 ref_result_0.bin
 ```
 
-Now we are ready to run this model on the real hardware. For convenience, a simple C++ application is provided under `/opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp`.
+Now we are ready to run this model on the real hardware. For convenience, our docker container comes with a simple C++ application (for CNN classification) provided under `/opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp`.
 
 To build this application, we should run:
 
@@ -150,7 +154,7 @@ This will create an executable file named `inference`. To run this application, 
 ./inference /opt/edgecortix/resnet50_deploy/
 ```
 
-This will run the model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model. The output will be similar to the following snippet:
+This will run the MERA compiled model on the FPGA board, as well as compare the reference results against the the ones we saved previously during the compilation of the model. The successful output will be similar to the following snippet (the time mentioned is the actual end-to-end latency for batch size 1):
 
 ```
 [22:53:30] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:63: Loading json data...
@@ -164,12 +168,12 @@ Loading: '/opt/edgecortix/dna.xclbin'
 [22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:82: Loading input...
 [22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:114: Warming up...
 [22:53:32] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:120: Running 100 times...
-[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:127: Took 9.16 msec.
+[22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:127: Took 7.96 msec.
 [22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:47: max abs diff: 1.17549e-38
 [22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:48: mean abs diff: 0
 [22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:49: correct ratio: 1
 [  info  ] 657   , DRM session CD1A42C64A2EEAA8 stopped.
 ```
 
-## Compile an existing example script
-The `example` folder in the repository includes ready-to-run python scripts for some example networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of the DNA IP. For other IP versions, the value of the `arch` parameter should be updated accordingly as was mentioned in the previous section. After that, the script can be compiler and run as is, based on the instructions in the previous section.
+## Compile other example DNN models
+The `example` folder in the repository includes ready-to-run python scripts for some example deep neural networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of the DNA IP. For other IP versions, the value of the `arch` parameter should be updated accordingly. After this, the script can be compiler and run as is, based on the instructions in the previous section.
