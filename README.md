@@ -186,3 +186,7 @@ Loading: '/opt/edgecortix/dna.xclbin'
 
 ## Compile other example DNN models
 The `example` folder in the repository includes ready-to-run python scripts for some example deep neural networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of the DNA IP. For other IP versions, the value of the `arch` parameter should be updated accordingly. After this, the script can be compiler and run as is, based on the instructions in the previous section.
+
+### Contact regarding DNA-F100/DNA-F200 FPGA bitsreams or the MERA compiler
+dna-ip@edgecortix.com
+
