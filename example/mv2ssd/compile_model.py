@@ -21,6 +21,6 @@ def export_module(inp_shape, script_module, output_dir, config):
 out_dir = "mv2ssd"
 config = {"arch": 200}
 inp_shape = (1, 480, 640, 3)
-model = torch.jit.load("./mv2ssd_640x480.pt")
+model = torch.jit.load("../model_zoo/mv2ssd_640x480.pt")
 export_module(inp_shape, model, out_dir, config)
 
