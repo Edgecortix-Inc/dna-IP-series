@@ -18,14 +18,14 @@ Once inside the docker environment, any shell that is launched should already ha
 In general, the compilation process involve the following steps:
 
 1. Create a DNN model (DNA does not need quantization aware training, however it should be possible to quantize the model post-training to INT8 bit).
-2. Quantize and JIT trace the model (pytorch quantization example)[https://pytorch.org/docs/stable/quantization.html].
+2. Quantize and JIT trace the model [pytorch quantization example](https://pytorch.org/docs/stable/quantization.html).
 3. Run the model on the MERA interpreter to get reference results.
 4. Import the traced model and compile with MERA.
 5. Create a shared library that contains the deployable binaries.
 
 ### Step 1 - Create a quantizable model
 
-For simplicity we will use pre-trained model provided by the `torchvision` (library)[https://github.com/pytorch/vision/tree/master/torchvision/models/quantization] which is commonly installed together with the `pytorch` (package)[https://pytorch.org/]. These are already pre-installed inside our virtual environment in docker.
+For simplicity we will use pre-trained model provided by the `torchvision` [library](https://github.com/pytorch/vision/tree/master/torchvision/models/quantization) which is commonly installed together with the `pytorch` [package](https://pytorch.org/). These are already pre-installed inside our virtual environment in docker.
 
 First, import all the necessary packages:
 
