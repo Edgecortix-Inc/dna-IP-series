@@ -59,7 +59,7 @@ class CamApp(App):
         self.capture.set(3,1280)
         self.capture.set(4,720)
         self.my_camera = KivyCamera(capture=self.capture, fps=30)
-        labelTitle= Label(text="[b]Dynamic Neural Accelerator™[/b] Person Detection on [b]Xilinx Alveo™ U50[/b]\nFreq. = 273 Mhz, Resolution = 1280x720, Model = Mobilenetv2-SSD, Precision = INT8", 
+        labelTitle= Label(text="[b]Dynamic Neural Accelerator™[/b] Person Detection on [b]Xilinx Alveo™ U50[/b]\n, Model = Mobilenetv2-SSD, Precision = INT8", 
                           size_hint=(0.2,0.3), halign="center",pos_hint={'center_x':0.5, 'center_y':2}, markup=True, font_size=28)
         im1 = Image(source="logo1.png", keep_ratio=True, size_hint_x=0.3, size_hint_y=0.3, opacity=1)
         layout = BoxLayout(orientation='vertical')
