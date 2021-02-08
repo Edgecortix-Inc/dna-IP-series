@@ -10,11 +10,10 @@ License
 All examples scripts here are licensed under an [Apache-2.0](LICENSE) license.
 
 ## Deploying a CNN model with the Dynamic Neural Accelerator® F-series (DNA-F100/F200)
-
-This guide assumes that:
-- The DNN model has been created with the PyTorch DL framework.
-- Deployment target is a Xilinx ALVEO U50 PCI-E board.
-- Running in EdgeCortix docker environment (Nimbix or on-premise).
+**This guide assumes that**:
+- *The DNN model has been created with the PyTorch DL framework.*
+- *Deployment target is a Xilinx ALVEO U50 PCI-E board.*
+- *You have access to EdgeCortix DNA-F200/F100 docker environment (Nimbix or on-premise), and are running the examples here from within it.*
 
 **NOTE**: We can run MERA compiler under *release* or *profiling* (fine-grained performance assessment) modes. Here we only consider the *release* mode version. 
 
