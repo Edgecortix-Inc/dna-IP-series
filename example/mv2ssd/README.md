@@ -3,6 +3,11 @@
 This guide shows how to compile and deploy the PyTorch model using the MERA compiler.
 It provides an example of a fully functional camera demo that uses the deployed model from Python.
 
+**Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
 ## Compile the PyTorch model
 
 ### The model
