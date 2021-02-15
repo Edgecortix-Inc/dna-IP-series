@@ -183,6 +183,14 @@ Loading: '/opt/edgecortix/dna.xclbin'
 [22:53:33] /opt/edgecortix/private-tvm/apps/mera_cpp/inference.cpp:49: correct ratio: 1
 [  info  ] 657   , DRM session CD1A42C64A2EEAA8 stopped.
 ```
+Alternatively, it is also possible to do inference directly on the hardware from Python using the same deployment directory `/opt/edgecortix/resnet50_deploy` created in previous steps.
+An example of how to load the reference data as well as the shared library from Python can be found in the script `example/run_ip_example.py`. This script shows how to run a deployed model directly from Python in a similar way to the C++ example `inference.cpp`. Please note that this script expects the deployment directory to be `/opt/edgecortix/resnet50_deploy`.
+
+To run the Python inference example:
+```
+python run_ip_example.py
+```
+from the `example` directory.
 
 ## Compile other example DNN models
 The `example` folder in the repository includes ready-to-run python scripts for some example deep neural networks, including Resnet-50 which was discussed above. These scripts assume the F100 variation of the DNA IP. For other IP versions, the value of the `arch` parameter should be updated accordingly. After this, the script can be compiler and run as is, based on the instructions in the previous section.
